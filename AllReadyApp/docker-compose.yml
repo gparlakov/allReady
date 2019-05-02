@@ -4,7 +4,7 @@ services:
     image: mcr.microsoft.com/mssql/server:2017-latest
     networks:
       - sql
-    command: bash -c "sleep 15 && /opt/mssql-tools/bin/sqlcmd -S sql_db,1433 -U sa -P sa12345! -Q 'create database Allready'"
+    command: bash -c "sleep 7 && /opt/mssql-tools/bin/sqlcmd -S sql_db,1433 -U sa -P sa12345! -Q 'create database AllReady'"
     depends_on:
      - sql_db
   sql_db:
@@ -17,5 +17,15 @@ services:
     environment:
       - ACCEPT_EULA=y
       - SA_PASSWORD=sa12345!
+  app:
+    build: .
+    networks:
+     - sql
+    environment:
+     - DATA__DefaultConnection__ConnectionString=Server=sql_db;Database=AllReady;User=sa;Password=sa12345!
+     - DATA__HangfireConnection__ConnectionString=Server=sql_db;Database=AllReady;User=sa;Password=sa12345!
+    command: bash -c "sleep 10 && dotnet AllReady.dll"
+    depends_on:
+     - sql_db
 networks:
   sql:

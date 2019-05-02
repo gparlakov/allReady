@@ -20,6 +20,9 @@ WORKDIR /AllReadyApp
 COPY --from=dotnet-builder /published .
 CMD ["dotnet", "AllReady.dll"]
 
-
+# docker network create test
+# docker run -d -e ACCEPT_EULA=y -e SA_PASSWORD=sa12345! -p 1433:1433 --name sql_1 --network test mcr.microsoft.com/mssql/server:2017-latest
+# create database AllReady
+# docker run -e DATA__HangfireConnection__ConnectionString=Server=sql_1;Database=AllReady;User=sa;Password=sa12345! -e DATA__DefaultConnection__ConnectionString=Server=sql_1;Database=AllReady;User=sa;Password=sa12345! --network test --rm allready-web-app:1 dotnet AllReady.dll
 
 
