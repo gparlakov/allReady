@@ -1,0 +1,14 @@
+FROM node:8 as node-builder
+RUN npm -g install gulp
+WORKDIR /build-js
+COPY ./Web-App/AllReady/package.json ./package.json
+RUN npm install
+FROM mcr.microsoft.com/dotnet/core/sdk:2.2 as dotnet-builder
+WORKDIR /build-dotnet
+COPY . .
+RUN dotnet build ./AllReady.Core/AllReady.Core.csproj
+RUN dotnet build ./Web-App/AllReady/AllReady.csproj
+RUN ls ./
+
+
+
