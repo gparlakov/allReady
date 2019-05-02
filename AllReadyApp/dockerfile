@@ -1,14 +1,25 @@
-FROM node:8 as node-builder
+FROM mcr.microsoft.com/dotnet/core/sdk:2.2 as dotnet-builder
+
+# Install Node.js LTS
+RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
+RUN apt-get install -y nodejs
+
 RUN npm -g install gulp
-WORKDIR /build-js
+
+WORKDIR /build
 COPY ./Web-App/AllReady/package.json ./package.json
 RUN npm install
-FROM mcr.microsoft.com/dotnet/core/sdk:2.2 as dotnet-builder
-WORKDIR /build-dotnet
+
 COPY . .
 RUN dotnet build ./AllReady.Core/AllReady.Core.csproj
-RUN dotnet build ./Web-App/AllReady/AllReady.csproj
-RUN ls ./
+RUN mkdir /published
+RUN dotnet publish ./Web-App/AllReady/AllReady.csproj --output /published
+
+FROM mcr.microsoft.com/dotnet/core/aspnet:2.2
+WORKDIR /AllReadyApp
+COPY --from=dotnet-builder /published .
+CMD ["dotnet", "AllReady.dll"]
+
 
 
 
