@@ -1,12 +1,5 @@
 version: "3"
 services:
-  sql_database_creator:
-    image: mcr.microsoft.com/mssql/server:2017-latest
-    networks:
-      - sql
-    command: bash -c "sleep 7 && /opt/mssql-tools/bin/sqlcmd -S sql_db,1433 -U sa -P sa12345! -Q 'create database AllReady'"
-    depends_on:
-     - sql_db
   sql_db:
     image: mcr.microsoft.com/mssql/server:2017-latest
     networks:
@@ -17,6 +10,26 @@ services:
     environment:
       - ACCEPT_EULA=y
       - SA_PASSWORD=sa12345!
+  sql_database_creator:
+    image: mcr.microsoft.com/mssql/server:2017-latest
+    networks:
+      - sql
+    command: bash -c "echo sleep 7 && sleep 7 && /opt/mssql-tools/bin/sqlcmd -S sql_db,1433 -U sa -P sa12345! -Q 'create database AllReady'"
+    depends_on:
+     - sql_db
+  migrator:
+    build:
+      context: .
+      dockerfile: database-migrator.dockerfile
+    environment:
+     - DATA__DefaultConnection__ConnectionString=Server=sql_db;Database=AllReady;User=sa;Password=sa12345!
+     - DATA__HangfireConnection__ConnectionString=Server=sql_db;Database=AllReady;User=sa;Password=sa12345!
+    networks:
+    - sql
+    depends_on:
+    - sql_db
+    - sql_database_creator
+    command: bash -c "dotnet ef database update --project ./Web-App/AllReady/AllReady.csproj"
   app:
     build: .
     networks:
@@ -24,8 +37,12 @@ services:
     environment:
      - DATA__DefaultConnection__ConnectionString=Server=sql_db;Database=AllReady;User=sa;Password=sa12345!
      - DATA__HangfireConnection__ConnectionString=Server=sql_db;Database=AllReady;User=sa;Password=sa12345!
-    command: bash -c "sleep 10 && dotnet AllReady.dll"
+    command: bash -c "sleep 50 && dotnet AllReady.dll"
     depends_on:
      - sql_db
+     - sql_database_creator
+     - migrator
+    ports:
+     - 80:80
 networks:
   sql:

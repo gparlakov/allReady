@@ -14,6 +14,7 @@ COPY . .
 RUN dotnet build ./AllReady.Core/AllReady.Core.csproj
 RUN mkdir /published
 RUN dotnet publish ./Web-App/AllReady/AllReady.csproj --output /published
+RUN gulp min
 
 FROM mcr.microsoft.com/dotnet/core/aspnet:2.2
 WORKDIR /AllReadyApp
