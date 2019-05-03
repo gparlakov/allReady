@@ -6,19 +6,30 @@ RUN apt-get install -y nodejs
 
 RUN npm -g install gulp
 
-WORKDIR /build
+WORKDIR /build/Web-App/AllReady
 COPY ./Web-App/AllReady/package.json ./package.json
 RUN npm install
+WORKDIR /build
+
+COPY ./AllReady.Core/AllReady.Core.csproj ./AllReady.Core/AllReady.Core.csproj
+RUN dotnet restore ./AllReady.Core/AllReady.Core.csproj
+
+COPY ./Web-App/AllReady/AllReady.csproj ./Web-App/AllReady/AllReady.csproj
+RUN dotnet restore ./Web-App/AllReady/AllReady.csproj
 
 COPY . .
-RUN dotnet build ./AllReady.Core/AllReady.Core.csproj
+
+# RUN dotnet build ./AllReady.Core/AllReady.Core.csproj --no-restore
 RUN mkdir /published
-RUN dotnet publish ./Web-App/AllReady/AllReady.csproj --output /published
-RUN gulp min
+RUN dotnet publish ./Web-App/AllReady/AllReady.csproj --output /published --no-restore
+RUN gulp -f ./Web-App/AllReady/gulpfile.js min
+
 
 FROM mcr.microsoft.com/dotnet/core/aspnet:2.2
 WORKDIR /AllReadyApp
 COPY --from=dotnet-builder /published .
+COPY --from=dotnet-builder /build/Web-App/AllReady/wwwroot ./wwwroot
+
 CMD ["dotnet", "AllReady.dll"]
 
 # docker network create test

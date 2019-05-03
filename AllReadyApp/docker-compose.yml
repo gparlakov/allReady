@@ -1,4 +1,4 @@
-version: "3"
+version: "3.7"
 services:
   sql_db:
     image: mcr.microsoft.com/mssql/server:2017-latest
@@ -14,7 +14,7 @@ services:
     image: mcr.microsoft.com/mssql/server:2017-latest
     networks:
       - sql
-    command: bash -c "echo sleep 7 && sleep 7 && /opt/mssql-tools/bin/sqlcmd -S sql_db,1433 -U sa -P sa12345! -Q 'create database AllReady'"
+    command: bash -c "echo sleep 7 && sleep 7 && echo /opt/mssql-tools/bin/sqlcmd -S sql_db,1433 -U sa -P sa12345! -Q 'create database AllReady' && /opt/mssql-tools/bin/sqlcmd -S sql_db,1433 -U sa -P sa12345! -Q 'create database AllReady'"
     depends_on:
      - sql_db
   migrator:
@@ -29,6 +29,7 @@ services:
     depends_on:
     - sql_db
     - sql_database_creator
+    restart: on-failure
     command: bash -c "dotnet ef database update --project ./Web-App/AllReady/AllReady.csproj"
   app:
     build: .
@@ -37,7 +38,13 @@ services:
     environment:
      - DATA__DefaultConnection__ConnectionString=Server=sql_db;Database=AllReady;User=sa;Password=sa12345!
      - DATA__HangfireConnection__ConnectionString=Server=sql_db;Database=AllReady;User=sa;Password=sa12345!
-    command: bash -c "sleep 50 && dotnet AllReady.dll"
+    restart: on-failure
+    deploy:
+      restart_policy:
+        condition: on_failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
     depends_on:
      - sql_db
      - sql_database_creator
