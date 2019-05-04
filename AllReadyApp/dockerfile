@@ -3,38 +3,35 @@ FROM mcr.microsoft.com/dotnet/core/sdk:2.2 as dotnet-builder
 # Install Node.js LTS
 RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
 RUN apt-get install -y nodejs
-
+# need gulp as a globally available cli tool
 RUN npm -g install gulp
 
+# install packages (and cache until package json changed)
 WORKDIR /build/Web-App/AllReady
 COPY ./Web-App/AllReady/package.json ./package.json
 RUN npm install
 WORKDIR /build
 
+# install packages (and cache until allready.core.csproj changed)
 COPY ./AllReady.Core/AllReady.Core.csproj ./AllReady.Core/AllReady.Core.csproj
 RUN dotnet restore ./AllReady.Core/AllReady.Core.csproj
 
+# install packages (and cache until allready.csproj changed)
 COPY ./Web-App/AllReady/AllReady.csproj ./Web-App/AllReady/AllReady.csproj
 RUN dotnet restore ./Web-App/AllReady/AllReady.csproj
 
+# copy the rest of the source code and build it (the dot dot thing means -> '.' the current working dir on the host to '.' current working dir in the container '.' -> '.')
 COPY . .
-
-# RUN dotnet build ./AllReady.Core/AllReady.Core.csproj --no-restore
 RUN mkdir /published
+# no restore as we've already restored above
 RUN dotnet publish ./Web-App/AllReady/AllReady.csproj --output /published --no-restore
+
+# build the ts js lib(which is simply copying the node_modules in wwwroot/lib)
 RUN gulp -f ./Web-App/AllReady/gulpfile.js min
+# copy wwwroot to publish/wwwroot
+RUN cp -R ./Web-App/AllReady/wwwroot/ /published/wwwroot/
 
-
-FROM mcr.microsoft.com/dotnet/core/aspnet:2.2
-WORKDIR /AllReadyApp
-COPY --from=dotnet-builder /published .
-COPY --from=dotnet-builder /build/Web-App/AllReady/wwwroot ./wwwroot
-
-CMD ["dotnet", "AllReady.dll"]
-
-# docker network create test
-# docker run -d -e ACCEPT_EULA=y -e SA_PASSWORD=sa12345! -p 1433:1433 --name sql_1 --network test mcr.microsoft.com/mssql/server:2017-latest
-# create database AllReady
-# docker run -e DATA__HangfireConnection__ConnectionString=Server=sql_1;Database=AllReady;User=sa;Password=sa12345! -e DATA__DefaultConnection__ConnectionString=Server=sql_1;Database=AllReady;User=sa;Password=sa12345! --network test --rm allready-web-app:1 dotnet AllReady.dll
-
-
+# run the migration
+# run the app in /published
+# needs to be a single command as otherwise RUN will get executed at image build time and we want to do it at container run time - hence inside the CMD
+CMD bash -c "dotnet ef database update --project ./Web-App/AllReady/AllReady.csproj && dotnet /published/AllReady.dll"
