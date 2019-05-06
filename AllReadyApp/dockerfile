@@ -30,8 +30,9 @@ RUN dotnet publish ./Web-App/AllReady/AllReady.csproj --output /published --no-r
 RUN gulp -f ./Web-App/AllReady/gulpfile.js min
 # copy wwwroot to publish/wwwroot
 RUN cp -R ./Web-App/AllReady/wwwroot/ /published/wwwroot/
-
+# set the /published as working directory (otherwise dotnet /published/AllReady.dll command messes up and does not `see` the version.json file)
+WORKDIR /published
 # run the migration
 # run the app in /published
 # needs to be a single command as otherwise RUN will get executed at image build time and we want to do it at container run time - hence inside the CMD
-CMD bash -c "dotnet ef database update --project ./Web-App/AllReady/AllReady.csproj && dotnet /published/AllReady.dll"
+CMD bash -c "dotnet ef database update --project /build/Web-App/AllReady/AllReady.csproj && dotnet AllReady.dll"
