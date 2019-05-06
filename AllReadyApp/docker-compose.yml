@@ -1,4 +1,5 @@
 version: "3.7"
+
 services:
   sql_db:
     image: mcr.microsoft.com/mssql/server:2017-latest
@@ -16,7 +17,7 @@ services:
     image: mcr.microsoft.com/mssql/server:2017-latest
     networks:
       - sql
-    command: bash -c "echo sleep 7 && sleep 7 && echo /opt/mssql-tools/bin/sqlcmd -S sql_db,1433 -U sa -P sa12345! -Q 'create database AllReady' && /opt/mssql-tools/bin/sqlcmd -S sql_db,1433 -U sa -P sa12345! -Q 'create database AllReady'"
+    command: bash -c "echo sleep wait a bit till the db is up and running before attempting to create the Allready DB && sleep 7 && /opt/mssql-tools/bin/sqlcmd -S sql_db,1433 -U sa -P sa12345! -Q 'create database AllReady'"
     depends_on:
      - sql_db
   app:
